@@ -17,11 +17,6 @@ import os
 load_dotenv()
 import api.llm.main
  
-GOOGLE_OAUTH_CLIENT_ID = os.environ.get('OAUTH_CLIENT_ID')
-if not GOOGLE_OAUTH_CLIENT_ID:
-    raise ValueError(
-        'GOOGLE_OAUTH_CLIENT_ID is missing.'
-    )
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
