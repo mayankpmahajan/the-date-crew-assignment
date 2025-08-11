@@ -3,4 +3,4 @@ from .models import *
 
 
 admin.site.register(User)
-admin.site.register(EmailWhitelist)
+admin.site.register(MatchMaker)

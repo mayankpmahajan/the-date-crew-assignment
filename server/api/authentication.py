@@ -3,6 +3,8 @@ from django.http import JsonResponse
 from django.contrib.auth.models import AnonymousUser
 from .utils import get_user_from_token
 from rest_framework.authentication import BaseAuthentication
+from rest_framework.permissions import BasePermission
+from .models import *
 
 
 class JWTAuthentication(BaseAuthentication):
@@ -22,3 +24,11 @@ class JWTAuthentication(BaseAuthentication):
 
     def authenticate_header(self, request):
         return 'Bearer'
+    
+    
+class IsMatchMaker(BasePermission):
+    def has_permission(self, request, view):
+        return (request.user and 
+                hasattr(request.user, 'is_authenticated') and 
+                request.user.is_authenticated and 
+                isinstance(request.user, MatchMaker))

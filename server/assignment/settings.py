@@ -15,6 +15,7 @@ import datetime
 from dotenv import load_dotenv
 import os
 load_dotenv()
+import api.llm.main
  
 GOOGLE_OAUTH_CLIENT_ID = os.environ.get('OAUTH_CLIENT_ID')
 if not GOOGLE_OAUTH_CLIENT_ID:
@@ -144,7 +145,7 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-AUTH_USER_MODEL = 'api.User'
+AUTH_USER_MODEL = 'api.MatchMaker'
 
  
 JWT_ACCESS_TOKEN_LIFETIME = datetime.timedelta(days=7)

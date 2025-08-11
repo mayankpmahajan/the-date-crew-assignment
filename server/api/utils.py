@@ -3,6 +3,7 @@ from datetime import datetime
 from django.conf import settings
 from .models import *
 
+
 def generate_jwt_tokens(user):
     access_payload = {
         'user_id': user.id,
@@ -28,9 +29,10 @@ def get_user_from_token(token):
     print("payload:", payload)
     if payload:
         try:
-            user = User.objects.get(id=payload['user_id'])
-            print("user:", User)
+            user = MatchMaker.objects.get(id=payload['user_id'])
             return user
         except User.DoesNotExist:
             return None
     return None
+
+
