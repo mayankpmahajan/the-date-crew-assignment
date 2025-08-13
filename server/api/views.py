@@ -184,7 +184,15 @@ class MatchesView(APIView):
         
         return list(queryset.select_related('matchmaker'))
     
+    
     def _get_gender_compatibility_filter(self, target_user):
+        """Return Q filter for users of the opposite gender only"""
+        if target_user.gender == 'M':
+            return Q(gender='F')
+        elif target_user.gender == 'F':
+            return Q(gender='M')
+        else:
+            return Q() 
         """Create gender compatibility filter based on user's interests"""
         filters = []
         

@@ -31,7 +31,7 @@ def get_user_from_token(token):
         try:
             user = MatchMaker.objects.get(id=payload['user_id'])
             return user
-        except User.DoesNotExist:
+        except MatchMaker.DoesNotExist:
             return None
     return None
 
