@@ -31,7 +31,7 @@ SECRET_KEY = '7c9e8b342f4a63cf6d1097c7b4f255df3b6c132ec8d4538e3fdf7a5a9d390b6d'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["the-date-crew-assignment.onrender.com"]
 
 
 # Application definition
