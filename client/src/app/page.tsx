@@ -1,20 +1,53 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Heart, ArrowRight, Mail, Lock, Target, BarChart3, UserCheck, Phone, MapPin } from "lucide-react"
+import { Heart, ArrowRight, User, Lock, Target, BarChart3, UserCheck, Phone, MapPin } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 export default function MatchmakerPortal() {
-  const [email, setEmail] = useState("")
+  const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+  const router = useRouter()
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log("Matchmaker login attempt:", { email, password })
+    setLoading(true)
+    setError("")
+    
+    try {
+      const response = await fetch("http://localhost:8000/api/v1/login/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: username,
+          password: password,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        // Save token to localStorage
+        localStorage.setItem("token", data.token)
+        // Redirect to dashboard on success
+        router.push("/admin-dashboard")
+      } else {
+        setError(data.message || "Login failed. Please check your credentials.")
+      }
+    } catch (err) {
+      setError("Network error. Please try again.")
+      console.error("Login error:", err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -23,7 +56,7 @@ export default function MatchmakerPortal() {
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: "url('/professional-soft-office.png')",
+          backgroundImage: "url('/test.jpg')",
         }}
       >
         <div className="absolute inset-0 bg-black/60"></div>
@@ -115,17 +148,24 @@ export default function MatchmakerPortal() {
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleLogin} className="space-y-4">
+                    {error && (
+                      <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded text-sm">
+                        {error}
+                      </div>
+                    )}
+                    
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-700">Email Address</label>
+                      <label className="text-sm font-medium text-gray-700">Username</label>
                       <div className="relative">
-                        <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                        <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                         <Input
-                          type="email"
-                          placeholder="Enter your work email"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
+                          type="text"
+                          placeholder="Enter your username"
+                          value={username}
+                          onChange={(e) => setUsername(e.target.value)}
                           className="pl-10 h-11 border-gray-200 focus:border-rose-500 focus:ring-rose-500"
                           required
+                          disabled={loading}
                         />
                       </div>
                     </div>
@@ -141,16 +181,27 @@ export default function MatchmakerPortal() {
                           onChange={(e) => setPassword(e.target.value)}
                           className="pl-10 h-11 border-gray-200 focus:border-rose-500 focus:ring-rose-500"
                           required
+                          disabled={loading}
                         />
                       </div>
                     </div>
 
                     <Button
                       type="submit"
-                      className="w-full h-11 bg-rose-600 hover:bg-rose-700 text-white font-semibold"
+                      className="w-full h-11 bg-rose-600 hover:bg-rose-700 text-white font-semibold disabled:opacity-50"
+                      disabled={loading}
                     >
-                      Access Dashboard
-                      <ArrowRight className="ml-2 h-4 w-4" />
+                      {loading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Signing In...
+                        </>
+                      ) : (
+                        <>
+                          Access Dashboard
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </>
+                      )}
                     </Button>
                   </form>
 
@@ -310,7 +361,7 @@ export default function MatchmakerPortal() {
                       <span className="text-white/70 text-sm">+1 (555) 123-4567</span>
                     </div>
                     <div className="flex items-center space-x-3">
-                      <Mail className="h-4 w-4 text-rose-400" />
+ 
                       <span className="text-white/70 text-sm">support@thedatecrew.com</span>
                     </div>
                     <div className="flex items-center space-x-3">

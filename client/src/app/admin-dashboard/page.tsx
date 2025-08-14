@@ -15,7 +15,7 @@ import {
 
 const AdminDashboard = () => {
   return (
-    <AuthWrapper>
+
       <AdminLayout>
       <div className="p-6">
         <AdminHeader />
@@ -88,7 +88,7 @@ const AdminDashboard = () => {
         </Card>
       </div>
     </AdminLayout>
-    </AuthWrapper>
+
   )
 }
 

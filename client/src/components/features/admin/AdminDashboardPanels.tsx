@@ -1,6 +1,6 @@
 "use client"
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { 
   Users, 
@@ -14,7 +14,6 @@ import {
   Loader2
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useDashboard } from '@/hooks'
 
 interface StatCardProps {
   icon: React.ElementType
@@ -63,8 +62,89 @@ const StatCard: React.FC<StatCardProps> = ({
   )
 }
 
+interface User {
+  id: number
+  first_name: string
+  last_name: string
+  gender: string
+  date_of_birth: string
+  matchmaker: number
+  matchmaker_info: {
+    id: number
+    username: string
+  }
+  country: string
+  city: string
+  height: number
+  email: string
+  phone_number: string
+  undergraduate_college: string
+  degree: string
+  income: string
+  current_company: string
+  designation: string
+  marital_status: string
+  languages_known: number[]
+  siblings: number
+  caste: string
+  religion: string
+  want_kids: string
+  open_to_relocate: string
+  open_to_pets: string
+  created_at: string
+  updated_at: string
+  age: number
+}
+
+interface ApiResponse {
+  status: string
+  matchmaker: {
+    id: number
+    username: string
+  }
+  total_users: number
+  data: User[]
+}
+
 const AdminDashboardPanels: React.FC = () => {
-  const { data, loading, error } = useDashboard()
+  const [data, setData] = useState<ApiResponse | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      setLoading(true)
+      setError(null)
+
+      try {
+        const token = localStorage.getItem('token')
+        if (!token) {
+          throw new Error('No authentication token found')
+        }
+
+        const response = await fetch('http://localhost:8000/api/v1/users/', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        })
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+
+        const result: ApiResponse = await response.json()
+        setData(result)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchDashboardData()
+  }, [])
 
   if (loading) {
     return (
@@ -92,46 +172,73 @@ const AdminDashboardPanels: React.FC = () => {
     )
   }
 
+  if (!data) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
+        <Card className="col-span-full p-4 bg-gray-50 border-gray-200">
+          <div className="text-gray-700 text-center">
+            No data available
+          </div>
+        </Card>
+      </div>
+    )
+  }
+
+  // Calculate statistics from the data
+  const totalUsers = data.total_users
+  const activeUsers = data.data.filter(user => user.marital_status !== 'married').length
+  const maleUsers = data.data.filter(user => user.gender === 'male').length
+  const femaleUsers = data.data.filter(user => user.gender === 'female').length
+  const otherUsers = data.data.filter(user => user.gender === 'other').length
+  
+  // Calculate average age
+  const averageAge = data.data.length > 0 
+    ? (data.data.reduce((sum, user) => sum + user.age, 0) / data.data.length).toFixed(1)
+    : 0
+
+  // Calculate users wanting kids
+  const usersWantingKids = data.data.filter(user => user.want_kids === 'yes').length
+
   const dashboardStats = [
     {
       icon: Users,
       title: 'Total Users',
-      value: data.stats.totalUsers || 0,
+      value: totalUsers,
       change: '+12%',
       changeType: 'positive' as const
     },
     {
       icon: Heart,
       title: 'Active Matches',
-      value: data.stats.totalMatches || 0,
+      value: maleUsers + femaleUsers, // Potential matches between males and females
       change: '+8%',
       changeType: 'positive' as const
     },
     {
       icon: UserCheck,
       title: 'Active Users',
-      value: data.stats.activeUsers || 0,
+      value: activeUsers,
       change: '+15%',
       changeType: 'positive' as const
     },
     {
       icon: MessageSquare,
-      title: 'Successful Matches',
-      value: data.stats.successfulMatches || 0,
+      title: 'Want Kids',
+      value: usersWantingKids,
       change: '+23%',
       changeType: 'positive' as const
     },
     {
       icon: Star,
-      title: 'Avg Match Score',
-      value: `${data.stats.averageMatchScore.toFixed(1)}/10` || '0/10',
+      title: 'Avg Age',
+      value: `${averageAge} years`,
       change: '+3%',
       changeType: 'positive' as const
     },
     {
       icon: Activity,
       title: 'Daily Active',
-      value: '1,892',
+      value: Math.floor(activeUsers * 0.6), // Estimated daily active as 60% of active users
       change: '+7%',
       changeType: 'positive' as const
     }

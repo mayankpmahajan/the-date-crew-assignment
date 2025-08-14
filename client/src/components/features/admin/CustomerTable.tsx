@@ -1,13 +1,12 @@
 "use client"
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import {
   useReactTable,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
-  createColumnHelper,
   flexRender,
   type ColumnDef,
 } from '@tanstack/react-table'
@@ -24,7 +23,6 @@ import {
   ChevronsLeft,
   ChevronsRight,
   ArrowUpDown,
-  MoreHorizontal,
   Eye,
   Edit,
   Trash2,
@@ -35,13 +33,19 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Customer, CustomerTableData } from '@/types/customer'
-import { useUsers, useApiErrorHandler } from '@/hooks'
 
 interface CustomerTableProps {
   onViewCustomer?: (customer: Customer) => void
   onEditCustomer?: (customer: Customer) => void
   onDeleteCustomer?: (customerId: string) => void
   onViewMatches?: (customer: Customer) => void
+}
+
+interface ApiResponse {
+  status: string;
+  matchmaker: any;
+  total_users: number;
+  data: any[];
 }
 
 const CustomerTable: React.FC<CustomerTableProps> = ({
@@ -52,14 +56,48 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
 }) => {
   const [globalFilter, setGlobalFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
-  
-  // API hooks
-  const { users, loading, error, refetch } = useUsers()
-  const { handleApiError } = useApiErrorHandler()
+  const [loading, setLoading] = useState<boolean>(true)
+  const [error, setError] = useState<string | null>(null)
+  const [data, setData] = useState<ApiResponse>({ status: '', matchmaker: null, total_users: 0, data: [] })
+
+  const fetchDashboardData = async () => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        throw new Error('No authentication token found')
+      }
+
+      const response = await fetch('http://localhost:8000/api/v1/users/', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result: ApiResponse = await response.json()
+      setData(result)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchDashboardData()
+  }, [])
 
   // Transform API data to table format
   const tableData: CustomerTableData[] = useMemo(() => 
-    users.map(user => ({
+    (data && Array.isArray(data.data) ? data.data : []).map(user => ({
       id: user.id.toString(),
       name: `${user.first_name} ${user.last_name}`,
       age: user.age,
@@ -67,11 +105,9 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
       maritalStatus: user.marital_status === 'single' ? 'Single' : 
                    user.marital_status === 'divorced' ? 'Divorced' : 
                    user.marital_status === 'widowed' ? 'Widowed' : 'Other',
-      statusTag: user.income === 'high' ? 'Active' : 
-                user.income === 'medium' ? 'Matched' : 
-                user.income === 'low' ? 'Pending' : 'Inactive',
+      statusTag: 'Active', // You can update this logic as needed
       email: user.email,
-    })), [users]
+    })), [data]
   )
 
   // Define columns
@@ -151,7 +187,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
       id: 'actions',
       header: 'Actions',
       cell: ({ row }) => {
-        const user = users.find(u => u.id.toString() === row.original.id)
+        const user = data?.data?.find(u => u.id.toString() === row.original.id)
         const customer: Customer | undefined = user ? {
           id: user.id.toString(),
           firstName: user.first_name,
@@ -227,7 +263,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
         )
       },
     },
-  ], [onViewCustomer, onEditCustomer, onDeleteCustomer, onViewMatches])
+  ], [onViewCustomer, onEditCustomer, onDeleteCustomer, onViewMatches, data])
 
   // Filter data based on status
   const filteredData = useMemo(() => {
@@ -278,7 +314,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
             <Button
               variant="outline"
               size="sm"
-              onClick={refetch}
+              onClick={fetchDashboardData}
               className="border-red-200 text-red-700 hover:bg-red-100"
             >
               <RefreshCw className="w-4 h-4 mr-2" />
@@ -289,159 +325,159 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
       )}
 
       {/* Content - only show when not loading */}
-      {!loading && (
+      {!loading && data && (
         <>
           {/* Header and Controls */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h2 className="text-2xl font-bold text-pink-900">Customer Matches ({users.length})</h2>
+              <h2 className="text-2xl font-bold text-pink-900">Customer Matches ({Array.isArray(data?.data) ? data.data.length : 0})</h2>
               <p className="text-sm text-pink-600">Manage and view all customer profiles</p>
             </div>
         
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="border-pink-200 text-pink-700 hover:bg-pink-50"
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Export
-          </Button>
-          <Button
-            size="sm"
-            className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Customer
-          </Button>
-        </div>
-      </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-pink-200 text-pink-700 hover:bg-pink-50"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Export
+              </Button>
+              <Button
+                size="sm"
+                className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Customer
+              </Button>
+            </div>
+          </div>
 
-      {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-pink-400 w-4 h-4" />
-          <Input
-            placeholder="Search customers..."
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            className="pl-10 bg-white border-pink-200 focus:border-pink-400 focus:ring-pink-200"
-          />
-        </div>
-        <div className="flex items-center space-x-2">
-          <Filter className="w-4 h-4 text-pink-600" />
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 border border-pink-200 rounded-md bg-white text-pink-700 focus:border-pink-400 focus:ring-pink-200 focus:ring-2 focus:outline-none"
-          >
-            <option value="all">All Status</option>
-            <option value="active">Active</option>
-            <option value="matched">Matched</option>
-            <option value="pending">Pending</option>
-            <option value="inactive">Inactive</option>
-          </select>
-        </div>
-      </div>
+          {/* Search and Filters */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-pink-400 w-4 h-4" />
+              <Input
+                placeholder="Search customers..."
+                value={globalFilter}
+                onChange={(e) => setGlobalFilter(e.target.value)}
+                className="pl-10 bg-white border-pink-200 focus:border-pink-400 focus:ring-pink-200"
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <Filter className="w-4 h-4 text-pink-600" />
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-3 py-2 border border-pink-200 rounded-md bg-white text-pink-700 focus:border-pink-400 focus:ring-pink-200 focus:ring-2 focus:outline-none"
+              >
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="matched">Matched</option>
+                <option value="pending">Pending</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
 
-      {/* Table */}
-      <Card className="border-pink-200">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <tr key={headerGroup.id} className="border-b border-pink-200 bg-pink-50">
-                  {headerGroup.headers.map((header) => (
-                    <th
-                      key={header.id}
-                      className="px-4 py-3 text-left text-sm font-medium text-pink-900"
+          {/* Table */}
+          <Card className="border-pink-200">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <tr key={headerGroup.id} className="border-b border-pink-200 bg-pink-50">
+                      {headerGroup.headers.map((header) => (
+                        <th
+                          key={header.id}
+                          className="px-4 py-3 text-left text-sm font-medium text-pink-900"
+                        >
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                                header.column.columnDef.header,
+                                header.getContext()
+                              )}
+                        </th>
+                      ))}
+                    </tr>
+                  ))}
+                </thead>
+                <tbody>
+                  {table.getRowModel().rows.map((row) => (
+                    <tr
+                      key={row.id}
+                      className="border-b border-pink-100 hover:bg-pink-25 transition-colors"
                     >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </th>
+                      {row.getVisibleCells().map((cell) => (
+                        <td key={cell.id} className="px-4 py-3 text-sm">
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </td>
+                      ))}
+                    </tr>
                   ))}
-                </tr>
-              ))}
-            </thead>
-            <tbody>
-              {table.getRowModel().rows.map((row) => (
-                <tr
-                  key={row.id}
-                  className="border-b border-pink-100 hover:bg-pink-25 transition-colors"
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-4 py-3 text-sm">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                </tbody>
+              </table>
+            </div>
 
-        {/* Pagination */}
-        <div className="flex items-center justify-between px-4 py-3 border-t border-pink-200 bg-pink-25">
-          <div className="flex items-center space-x-2">
-            <p className="text-sm text-pink-700">
-              Showing {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} to{' '}
-              {Math.min(
-                (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
-                table.getFilteredRowModel().rows.length
-              )}{' '}
-              of {table.getFilteredRowModel().rows.length} entries
-            </p>
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.setPageIndex(0)}
-              disabled={!table.getCanPreviousPage()}
-              className="border-pink-200 text-pink-700 hover:bg-pink-50"
-            >
-              <ChevronsLeft className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-              className="border-pink-200 text-pink-700 hover:bg-pink-50"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            
-            <span className="text-sm text-pink-700 px-2">
-              Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
-            </span>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-              className="border-pink-200 text-pink-700 hover:bg-pink-50"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-              disabled={!table.getCanNextPage()}
-              className="border-pink-200 text-pink-700 hover:bg-pink-50"
-            >
-              <ChevronsRight className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      </Card>
+            {/* Pagination */}
+            <div className="flex items-center justify-between px-4 py-3 border-t border-pink-200 bg-pink-25">
+              <div className="flex items-center space-x-2">
+                <p className="text-sm text-pink-700">
+                  Showing {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} to{' '}
+                  {Math.min(
+                    (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
+                    table.getFilteredRowModel().rows.length
+                  )}{' '}
+                  of {table.getFilteredRowModel().rows.length} entries
+                </p>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => table.setPageIndex(0)}
+                  disabled={!table.getCanPreviousPage()}
+                  className="border-pink-200 text-pink-700 hover:bg-pink-50"
+                >
+                  <ChevronsLeft className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => table.previousPage()}
+                  disabled={!table.getCanPreviousPage()}
+                  className="border-pink-200 text-pink-700 hover:bg-pink-50"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                
+                <span className="text-sm text-pink-700 px-2">
+                  Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+                </span>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => table.nextPage()}
+                  disabled={!table.getCanNextPage()}
+                  className="border-pink-200 text-pink-700 hover:bg-pink-50"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                  disabled={!table.getCanNextPage()}
+                  className="border-pink-200 text-pink-700 hover:bg-pink-50"
+                >
+                  <ChevronsRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </Card>
         </>
       )}
     </div>

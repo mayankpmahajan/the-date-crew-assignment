@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
 // Base API configuration
 const API_BASE_URL = 'http://localhost:8000/api/v1';
@@ -10,13 +10,7 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  status: 'success';
-  message: string;
-  user: {
-    id: number;
-    username: string;
-  };
-  access_token: string;
+  token: string;
 }
 
 export interface ApiError {
@@ -31,22 +25,93 @@ interface UseAuthReturn {
   logout: () => void;
   isAuthenticated: boolean;
   token: string | null;
-  user: LoginResponse['user'] | null;
+  user: { id: string; username: string } | null;
   loading: boolean;
   error: string | null;
+  isInitialized: boolean; // Added to track initialization state
 }
 
+// Safe localStorage helper functions
+const getStorageItem = (key: string): string | null => {
+  if (typeof window === 'undefined') return null;
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+
+const setStorageItem = (key: string, value: string): void => {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // Handle storage errors silently
+  }
+};
+
+const removeStorageItem = (key: string): void => {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // Handle storage errors silently
+  }
+};
+
+const parseStoredUser = (storedUser: string | null): { id: string; username: string } | null => {
+  if (!storedUser) return null;
+  try {
+    const parsed = JSON.parse(storedUser);
+    // Validate that it has the expected structure
+    if (parsed && typeof parsed === 'object' && 'id' in parsed && 'username' in parsed) {
+      return parsed;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+};
+
 export const useAuth = (): UseAuthReturn => {
-  const [token, setToken] = useState<string | null>(() => 
-    typeof window !== 'undefined' ? localStorage.getItem('access_token') : null
-  );
-  const [user, setUser] = useState<LoginResponse['user'] | null>(() => {
-    if (typeof window === 'undefined') return null;
-    const storedUser = localStorage.getItem('user');
-    return storedUser ? JSON.parse(storedUser) : null;
-  });
+  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<LoginResponse['user'] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Initialize auth state from localStorage on mount
+  useEffect(() => {
+    const initializeAuth = () => {
+      try {
+        const storedToken = getStorageItem('access_token');
+        const storedUserData = getStorageItem('user');
+
+        if (storedToken) {
+          setToken(storedToken);
+          
+          // Parse and validate user data
+          const parsedUser = parseStoredUser(storedUserData);
+          if (parsedUser) {
+            setUser(parsedUser);
+          } else {
+            // If we have a token but invalid user data, clear everything
+            removeStorageItem('access_token');
+            removeStorageItem('user');
+          }
+        }
+      } catch (err) {
+        // Clear potentially corrupted data
+        removeStorageItem('access_token');
+        removeStorageItem('user');
+        console.warn('Auth initialization error, cleared storage:', err);
+      } finally {
+        setIsInitialized(true);
+      }
+    };
+
+    initializeAuth();
+  }, []);
 
   const login = useCallback(async (credentials: LoginRequest): Promise<LoginResponse> => {
     setLoading(true);
@@ -68,14 +133,20 @@ export const useAuth = (): UseAuthReturn => {
         if (data.password) {
           throw new Error(data.password[0]);
         }
-        throw new Error(data.error || 'Login failed');
+        if (data.username) {
+          throw new Error(data.username[0]);
+        }
+        throw new Error(data.error || data.detail || 'Login failed');
+      }
+
+      // Validate response structure
+      if (!data.access_token || !data.user) {
+        throw new Error('Invalid response from server');
       }
 
       // Store token and user data
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('access_token', data.access_token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-      }
+      setStorageItem('access_token', data.access_token);
+      setStorageItem('user', JSON.stringify(data));
       
       setToken(data.access_token);
       setUser(data.user);
@@ -91,10 +162,8 @@ export const useAuth = (): UseAuthReturn => {
   }, []);
 
   const logout = useCallback(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('user');
-    }
+    removeStorageItem('access_token');
+    removeStorageItem('user');
     setToken(null);
     setUser(null);
     setError(null);
@@ -103,10 +172,11 @@ export const useAuth = (): UseAuthReturn => {
   return {
     login,
     logout,
-    isAuthenticated: !!token,
+    isAuthenticated: !!token && !!user,
     token,
     user,
     loading,
     error,
+    isInitialized,
   };
 };
