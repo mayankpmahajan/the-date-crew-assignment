@@ -766,6 +766,6 @@ def EmailView(request):
         matches = list(User.objects.filter(id__in=match_ids))
 
         email_content = generate_matchmaker_email(user, matches, matchmaker_name)
-        return JsonResponse({'email': email_content})
+        return JsonResponse({'email': email_content}, status=status.HTTP_201_CREATED)
     except Exception as e:
         return JsonResponse({'error': str(e), 'trace': traceback.format_exc()}, status=500)

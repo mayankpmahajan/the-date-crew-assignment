@@ -32,7 +32,7 @@ SECRET_KEY = '7c9e8b342f4a63cf6d1097c7b4f255df3b6c132ec8d4538e3fdf7a5a9d390b6d'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["the-date-crew-assignment.onrender.com", "localhost"]
+ALLOWED_HOSTS = ["the-date-crew-assignment.onrender.com", "localhost", "bba9eecebabf.ngrok-free.app"]
 
 
 # Application definition
@@ -64,11 +64,11 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-# CORS_ALLOWED_ORIGINS = [
-#     "http://localhost:3000",
-#     "http://localhost:3001",     
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:3001",     
        
-# ]
+]
 
 ROOT_URLCONF = 'assignment.urls'
 

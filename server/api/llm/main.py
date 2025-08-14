@@ -86,6 +86,9 @@ def cosine_similarity(vec1, vec2):
 # --- Load KB ---
 with open("knowledge-base.json", "r") as f:
     kb = json.load(f)
+    print("KB content:", kb)
+    print("KB keys:", kb.keys())
+
 
 def get_user_profile(user_id):
     try:
@@ -165,24 +168,24 @@ def rag_compatibility_pipeline(target_user_id, selected_user_id):
     # Build a query string from relevant user fields for RAG
     def user_query_string(user):
         return ' '.join([
-            str(user.full_name),
-            str(user.gender),
-            str(user.age),
-            str(user.city),
-            str(user.country),
-            str(user.height),
-            str(user.degree),
-            str(user.current_company),
-            str(user.designation),
-            str(user.marital_status),
-            ','.join([lang.name for lang in user.languages_known.all()]),
-            str(user.siblings),
-            str(user.caste),
-            str(user.religion),
-            str(user.want_kids),
-            str(user.open_to_relocate),
-            str(user.open_to_pets)
+            f"{user.first_name or ''} {user.last_name or ''}".strip(),
+            str(user.gender or ''),
+            str(user.city or ''),
+            str(user.country or ''),
+            str(user.height or ''),
+            str(user.degree or ''),
+            str(user.current_company or ''),
+            str(user.designation or ''),
+            str(user.marital_status or ''),
+            ','.join(lang.name for lang in user.languages_known.all()),
+            str(user.siblings or ''),
+            str(user.caste or ''),
+            str(user.religion or ''),
+            str(user.want_kids or ''),
+            str(user.open_to_relocate or ''),
+            str(user.open_to_pets or '')
         ])
+
 
     query = user_query_string(target_user) + ' ' + user_query_string(selected_user)
     relevant_docs = retrieve_relevant_docs(query)
