@@ -17,7 +17,6 @@ import datetime
 from dotenv import load_dotenv
 import os
 load_dotenv()
-import api.llm.main
  
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
