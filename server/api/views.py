@@ -16,6 +16,14 @@ import operator
 from functools import reduce
 from datetime import date
 from django.shortcuts import get_object_or_404
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+import traceback
+import json as pyjson
+
+
+from api.llm.main import generate_matchmaker_email
 
 class AdvancedMatchmakingEngine:
     """
@@ -743,3 +751,21 @@ class MatchesView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     
+
+# API endpoint for generating matchmaker email
+@csrf_exempt
+@require_POST
+def EmailView(request):
+    try:
+        data = pyjson.loads(request.body)
+        user_id = data.get('user_id')
+        match_ids = data.get('match_ids', [])
+        matchmaker_name = data.get('matchmaker_name', 'Matchmaker')
+
+        user = User.objects.get(id=user_id)
+        matches = list(User.objects.filter(id__in=match_ids))
+
+        email_content = generate_matchmaker_email(user, matches, matchmaker_name)
+        return JsonResponse({'email': email_content})
+    except Exception as e:
+        return JsonResponse({'error': str(e), 'trace': traceback.format_exc()}, status=500)

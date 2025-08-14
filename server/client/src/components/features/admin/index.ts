@@ -1,7 +1,0 @@
-export { default as AdminLayout } from './AdminLayout'
-export { default as AdminSidebar } from './AdminSidebar'
-export { default as AdminHeader } from './AdminHeader'
-export { default as AdminDashboardPanels } from './AdminDashboardPanels'
-export { default as CustomerTable } from './CustomerTable'
-export { default as CustomerDetailView } from './CustomerDetailView'
-export { default as CustomerMatchesPopup } from './CustomerMatchesPopup'
