@@ -1,0 +1,219 @@
+{
+  "compatibility_parameters": [
+    {
+      "name": "Age",
+      "weight_male": 15,
+      "weight_female": 12,
+      "matching_rules": {
+        "male": {
+          "within_range": 1.0,
+          "slightly_outside": 0.7,
+          "outside_but_ok": 0.4,
+          "far_outside": 0.0
+        },
+        "female": {
+          "within_range": 1.0,
+          "slightly_outside": 0.8,
+          "outside_but_ok": 0.5,
+          "far_outside": 0.0
+        }
+      },
+      "insights": {
+        "male": "Men generally prefer women ~2 years younger or more; preference stays consistent across late 20s–40s. Age gap tolerance wider.",
+        "female": "Women tend to prefer partners close in age; younger women prefer slightly older, older women sometimes lean younger if stable."
+      },
+      "references": [
+        "https://www.globaldatinginsights.com/featured/study-highlights-gender-differences-in-age-trends-on-dating-platforms/",
+        "https://epjdatascience.springeropen.com/articles/10.1140/epjds/s13688-019-0192-x"
+      ]
+    },
+    {
+      "name": "Income",
+      "weight_male": 9,
+      "weight_female": 12,
+      "matching_rules": {
+        "shared": {
+          "exact_or_above": 1.0,
+          "within_10_percent_below": 0.8,
+          "within_25_percent_below": 0.5,
+          "more_than_25_percent_below": 0.0
+        }
+      },
+      "insights": {
+        "male": "Men often prefer partners earning less; prioritize lifestyle and family goals over earnings. Some discomfort if wife earns more.",
+        "female": "Income and career trajectory are major factors; financial stability is attractive. Hypergamy trends persist."
+      },
+      "references": [
+        "https://ifstudies.org/blog/the-ideal-husband-a-man-in-possession-of-a-good-income",
+        "https://en.wikipedia.org/wiki/Hypergamy"
+      ]
+    },
+    {
+      "name": "Caste and Religion",
+      "weight_male": 15,
+      "weight_female": 14,
+      "matching_rules": {
+        "both_match": 1.0,
+        "same_religion_diff_caste": 0.5,
+        "both_different": 0.0
+      },
+      "insights": {
+        "shared": "Both genders show strong caste/religion preference; ~90–95% of marriages are within caste. Religion mismatches have higher resistance for women."
+      },
+      "references": [
+        "https://digitalcommons.isical.ac.in/ibp/79/",
+        "https://www.pewresearch.org/religion/2021/06/29/religion-in-india-tolerance-and-segregation/"
+      ]
+    },
+    {
+      "name": "Location/Relocation Readiness",
+      "weight_male": 9,
+      "weight_female": 6,
+      "matching_rules": {
+        "same_location": 1.0,
+        "diff_location_willing_to_relocate": {
+          "male": 0.8,
+          "female": 0.7
+        },
+        "diff_location_neither_willing": 0.0
+      },
+      "insights": {
+        "male": "Men prefer local matches but value relocation flexibility. Career moves often male-led.",
+        "female": "Many women expect relocation at marriage, but career-oriented women prefer local or partner-willing-to-relocate options."
+      },
+      "references": [
+        "https://www.nber.org/digest/202412/gender-career-opportunities-and-relocation-decisions-couples",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC7821976/"
+      ]
+    },
+    {
+      "name": "Want Kids",
+      "weight_male": 14,
+      "weight_female": 14,
+      "matching_rules": {
+        "exact_match": 1.0,
+        "one_unsure": 0.5,
+        "opposite": 0.0
+      },
+      "insights": {
+        "male": "Many men want kids; less likely to link parenthood to career cost. Unsure responses are flexible.",
+        "female": "Career-focused women may delay or opt out of kids; 'never' is often a firm choice. Timing matters."
+      },
+      "references": [
+        "https://www.pewresearch.org/social-trends/2024/07/25/the-experiences-of-u-s-adults-who-dont-have-children/",
+        "https://journals.plos.org/plosone/article?id=10.1371%2Fjournal.pone.0283301"
+      ]
+    },
+    {
+      "name": "Educational Background",
+      "weight_male": 5,
+      "weight_female": 6,
+      "matching_rules": {
+        "exact_match": 1.0,
+        "partial_match": 0.5,
+        "opposite": 0.0
+      },
+      "insights": {
+        "male": "Education matters less than for women but still preferred if similar; prestige and network value exist.",
+        "female": "Women often seek equal or higher education levels; high-prestige college backgrounds increase match value."
+      },
+      "references": [
+        "https://www.newyorkfed.org/medialibrary/media/research/staff_reports/sr682.pdf"
+      ]
+    },
+    {
+      "name": "Company and Designation",
+      "weight_male": 8,
+      "weight_female": 10,
+      "matching_rules": {
+        "exact_match": 1.0,
+        "partial_match": 0.5,
+        "opposite": 0.0
+      },
+      "insights": {
+        "male": "Career prestige respected but secondary to other factors.",
+        "female": "Strong emphasis on company prestige and career growth trajectory."
+      },
+      "references": [
+        "https://www.sciencedirect.com/science/article/abs/pii/S109051381730315X"
+      ]
+    },
+    {
+      "name": "Marital Status",
+      "weight_male": 7,
+      "weight_female": 7,
+      "matching_rules": {
+        "exact_match": 1.0,
+        "partial_match": 0.5,
+        "opposite": 0.0
+      },
+      "insights": {
+        "male": "Never-married preferred; more open to remarriage than women.",
+        "female": "Divorced/widowed men often seen as more available than divorced women in traditional contexts."
+      },
+      "references": [
+        "https://www.pewresearch.org/social-trends/2014/11/14/chapter-2-the-demographics-of-remarriage/"
+      ]
+    },
+    {
+      "name": "Siblings/Family Size",
+      "weight_male": 3,
+      "weight_female": 5,
+      "matching_rules": {
+        "exact_match": 1.0,
+        "partial_match": 0.5,
+        "opposite": 0.0
+      },
+      "insights": {
+        "shared": "Having siblings is generally seen positively; only-child stereotypes exist."
+      },
+      "references": [
+        "https://www.glamour.com/story/the-number-of-siblings-you-hav"
+      ]
+    },
+    {
+      "name": "Languages Known",
+      "weight_male": 4,
+      "weight_female": 3,
+      "matching_rules": {
+        "exact_match": 1.0,
+        "partial_match": 0.5,
+        "opposite": 0.0
+      },
+      "insights": {
+        "shared": "Language compatibility aids cultural fit and communication; primary+secondary match preferred."
+      },
+      "references": []
+    },
+    {
+      "name": "Height",
+      "weight_male": 7,
+      "weight_female": 8,
+      "matching_rules": {
+        "within_5cm": 1.0,
+        "within_10cm": 0.5,
+        "outside_10cm": 0.0
+      },
+      "insights": {
+        "male": "Height is less critical; small preference for shorter women.",
+        "female": "Women more sensitive to height; usually prefer taller men."
+      },
+      "references": []
+    },
+    {
+      "name": "Open to Pets",
+      "weight_male": 4,
+      "weight_female": 3,
+      "matching_rules": {
+        "exact_match": 1.0,
+        "partial_match": 0.5,
+        "opposite": 0.0
+      },
+      "insights": {
+        "shared": "Minor but lifestyle-relevant preference; pet alignment avoids future friction."
+      },
+      "references": []
+    }
+  ],
+  "scoring_formula": "MatchScore = (sum(Wi * Mi) / sum(Wi)) * 100"
+}

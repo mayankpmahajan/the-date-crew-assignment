@@ -1,8 +1,19 @@
 import os
 from huggingface_hub import InferenceClient
+import json
+import requests
+import numpy as np
+from api.models import User
+
+HF_TOKEN = os.getenv("HF_TOKEN")
 
 # Initialize client (set HF_TOKEN in your environment)
-client = InferenceClient(token=os.getenv("HF_TOKEN"))
+client = InferenceClient(token=HF_TOKEN)
+EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+LLM_MODEL = "mistralai/Mixtral-8x7B-Instruct-v0.1"
+
+embed_client = InferenceClient(model=EMBEDDING_MODEL, token=HF_TOKEN)
+llm_client = InferenceClient(model=LLM_MODEL, token=HF_TOKEN)
 
 def generate_matchmaker_email(user, matches, matchmaker_name):
     """
@@ -61,3 +72,119 @@ Write only the email body, without explanations:
     )
 
     return completion.choices[0].message["content"]
+
+
+# --- Embedding helper ---
+def get_embedding(text: str):
+    output = embed_client.feature_extraction(text)
+    return np.array(output).mean(axis=0)  # mean pooling
+
+# --- Cosine similarity ---
+def cosine_similarity(vec1, vec2):
+    return np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
+
+# --- Load KB ---
+with open("knowledge-base.json", "r") as f:
+    kb = json.load(f)
+
+def get_user_profile(user_id):
+    try:
+        return User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return None
+
+# --- Retrieve relevant docs ---
+def retrieve_relevant_docs(query, top_k=5):
+    query_emb = get_embedding(query)
+    docs_with_scores = []
+
+    for doc in kb["documents"]:
+        doc_emb = get_embedding(doc["text"])
+        score = cosine_similarity(query_emb, doc_emb)
+        docs_with_scores.append((doc, score))
+
+    docs_with_scores.sort(key=lambda x: x[1], reverse=True)
+    return [d[0] for d in docs_with_scores[:top_k]]
+
+# --- Ask LLM ---
+def get_compatibility_score(target_user, selected_user, context_docs):
+    prompt = f"""
+You are a compatibility evaluator for the Natural Language Backend project.
+where the preference of the users are assumed to be people who are in their late 20s to early 30s earning great money and doing great careerwise but have previously struggled with dating apps and not able to get a match through traditional indian arrange marriage setup
+You are given two users:
+
+Target User:
+{json.dumps(target_user, indent=2)}
+
+Selected User:
+{json.dumps(selected_user, indent=2)}
+
+Relevant Project Context:
+{[doc['text'] for doc in context_docs]}
+
+Evaluate compatibility based on:
+-Age
+-gender
+-location
+-height
+-graduatiion degree
+-current_company
+-designation
+-marital_status
+-languages_known
+-siblings
+-caste
+-religion
+*want_kids
+*open_to_relocate
+*open_to_pets
+
+Output ONLY in JSON:
+{{
+  "compatibility_score": <number from 0 to 5>,
+  "reason": "<brief explanation>"
+}}
+"""
+    completion = llm_client.text_generation(
+        prompt,
+        max_new_tokens=300,
+        temperature=0.2
+    )
+
+    try:
+        parsed = json.loads(completion.strip().split("{", 1)[1].rsplit("}", 1)[0].join(["{", "}"]))
+        return parsed
+    except Exception:
+        return {"compatibility_score": None, "reason": "Failed to parse model output"}
+
+# --- Pipeline ---
+def rag_compatibility_pipeline(target_user_id, selected_user_id):
+    target_user = get_user_profile(target_user_id)
+    selected_user = get_user_profile(selected_user_id)
+
+    # Build a query string from relevant user fields for RAG
+    def user_query_string(user):
+        return ' '.join([
+            str(user.full_name),
+            str(user.gender),
+            str(user.age),
+            str(user.city),
+            str(user.country),
+            str(user.height),
+            str(user.degree),
+            str(user.current_company),
+            str(user.designation),
+            str(user.marital_status),
+            ','.join([lang.name for lang in user.languages_known.all()]),
+            str(user.siblings),
+            str(user.caste),
+            str(user.religion),
+            str(user.want_kids),
+            str(user.open_to_relocate),
+            str(user.open_to_pets)
+        ])
+
+    query = user_query_string(target_user) + ' ' + user_query_string(selected_user)
+    relevant_docs = retrieve_relevant_docs(query)
+
+    return get_compatibility_score(target_user, selected_user, relevant_docs)
